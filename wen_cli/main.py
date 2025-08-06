@@ -3,6 +3,7 @@ import subprocess
 import json
 from dotenv import load_dotenv
 from openai import OpenAI
+from ollama import Client as OllamaClient
 from colorama import init, Fore, Style
 
 # Initialize colorama for cross-platform color support
@@ -10,6 +11,7 @@ init()
 
 load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+ollama_client = OllamaClient()
 
 # Enhanced conversation history with context
 conversation_history = [
@@ -103,15 +105,31 @@ def get_ai_task_plan(user_input):
         }
     ]
     
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=plan_messages,
-        max_tokens=200,
-        temperature=0.1,
-        timeout=10
-    )
+    # Check which provider to use
+    provider = os.getenv("WEN_PROVIDER", "openai")
     
-    return response.choices[0].message.content.strip()
+    if provider == "ollama":
+        try:
+            response = ollama_client.chat(
+                model="mistral",
+                messages=plan_messages,
+                options={"num_predict": 200, "temperature": 0.1}
+            )
+            return response['message']['content'].strip()
+        except Exception as e:
+            print(f"{Fore.RED}Ollama error: {e}{Style.RESET_ALL}")
+            print(f"{Fore.YELLOW}Falling back to OpenAI...{Style.RESET_ALL}")
+            provider = "openai"
+    
+    if provider == "openai":
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=plan_messages,
+            max_tokens=200,
+            temperature=0.1,
+            timeout=10
+        )
+        return response.choices[0].message.content.strip()
 
 def execute_ai_planned_steps(user_input, plan_response):
     """Execute the steps planned by AI"""
@@ -160,15 +178,32 @@ def get_ai_response(user_input, history):
     """Get response from AI with conversation history"""
     messages = history + [{"role": "user", "content": user_input}]
     
-    response = client.chat.completions.create(
-        model="gpt-4",
-        messages=messages,
-        max_tokens=1000,  # Allow longer responses for JSON
-        temperature=0.7,  # More creative and conversational
-        timeout=15
-    )
+    # Check which provider to use
+    provider = os.getenv("WEN_PROVIDER", "openai")
     
-    return response.choices[0].message.content.strip()
+    if provider == "ollama":
+        try:
+            response = ollama_client.chat(
+                model="mistral",
+                messages=messages,
+                options={"num_predict": 1000, "temperature": 0.7}
+            )
+            return response['message']['content'].strip()
+        except Exception as e:
+            print(f"{Fore.RED}Ollama error: {e}{Style.RESET_ALL}")
+            print(f"{Fore.YELLOW}Falling back to OpenAI...{Style.RESET_ALL}")
+            # Fallback to OpenAI
+            provider = "openai"
+    
+    if provider == "openai":
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=messages,
+            max_tokens=1000,  # Allow longer responses for JSON
+            temperature=0.7,  # More creative and conversational
+            timeout=15
+        )
+        return response.choices[0].message.content.strip()
 
 def parse_ai_response(response_text):
     """Parse AI response and extract JSON structure"""
@@ -310,7 +345,8 @@ def execute_actions(actions, conversation_history):
 
 
 def main():
-    print(f"{Fore.CYAN}hi i am wen - working dir: {os.getcwd()}{Style.RESET_ALL}")
+    provider = os.getenv("WEN_PROVIDER", "openai")
+    print(f"{Fore.CYAN}hi i am wen - working dir: {os.getcwd()} - using {provider}{Style.RESET_ALL}")
     # print(f"{Fore.YELLOW}Type 'exit' to quit{Style.RESET_ALL}")
     
     while True:

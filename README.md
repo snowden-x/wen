@@ -71,9 +71,20 @@ Where `3x` is your Python version (e.g., `Python39`, `Python310`, etc.).
 1. Create a `.env` file in the project root:
 ```
 OPENAI_API_KEY=your_openai_api_key_here
+WEN_PROVIDER=openai  # or ollama
 ```
 
-2. Make sure you have an OpenAI API key and add it to your `.env` file.
+2. Choose your AI provider:
+
+**Option A: OpenAI (Default)**
+- Get an OpenAI API key and add it to your `.env` file
+- Set `WEN_PROVIDER=openai` or leave it unset
+
+**Option B: Ollama (Local)**
+- Install Ollama from https://ollama.ai
+- Pull the Mistral model: `ollama pull mistral`
+- Set `WEN_PROVIDER=ollama` in your `.env` file
+- No API key needed
 
 ## Usage
 
@@ -83,7 +94,21 @@ After installation, you can run the CLI from anywhere:
 wen
 ```
 
-The CLI will start and you can interact with it using natural language to execute commands.
+The CLI will start and show which provider it's using. You can interact with it using natural language to execute commands.
+
+### Provider Options
+
+**Use OpenAI (Default):**
+```bash
+wen
+# or
+WEN_PROVIDER=openai wen
+```
+
+**Use Ollama (Local):**
+```bash
+WEN_PROVIDER=ollama wen
+```
 
 ## Examples
 
@@ -99,8 +124,8 @@ The `wen` command provides an AI-powered CLI assistant. It doesn't conflict with
 ## Requirements
 
 - Python 3.7+
-- OpenAI API key
-- Internet connection for AI responses
+- **For OpenAI**: OpenAI API key and internet connection
+- **For Ollama**: Ollama installed locally with Mistral model pulled
 
 ## License
 
